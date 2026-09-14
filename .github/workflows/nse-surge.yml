@@ -1,0 +1,47 @@
+name: NSE next-session surge research
+
+on:
+  workflow_dispatch:
+    inputs:
+      start:
+        description: Historical start date (YYYY-MM-DD)
+        required: false
+        default: '2016-01-01'
+      limit:
+        description: NSE EQ symbols; 0 means all active EQ symbols
+        required: false
+        default: '0'
+  schedule:
+    # Approximately 15:45 IST on weekdays, after NSE cash-market close.
+    - cron: '15 10 * * 1-5'
+
+permissions:
+  contents: read
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Download data and run leak-free walk-forward evaluation
+        run: >-
+          python src/nse_surge.py run
+          --start "${{ inputs.start || '2016-01-01' }}"
+          --limit "${{ inputs.limit || '0' }}"
+          --batch-size 75
+          --train-sessions 504
+          --test-sessions 21
+          --top-per-day 5
+      - name: Publish reproducible results
+        uses: actions/upload-artifact@v4
+        with:
+          name: nse-surge-results-${{ github.run_id }}
+          path: reports/
+          if-no-files-found: error
+
