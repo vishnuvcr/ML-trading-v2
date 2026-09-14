@@ -1,6 +1,12 @@
 name: NSE next-session surge research
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'requirements.txt'
+      - '.github/workflows/nse-surge.yml'
   workflow_dispatch:
     inputs:
       start:
